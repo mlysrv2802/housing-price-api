@@ -5,14 +5,54 @@ An end-to-end ML project: generate (messy) housing data, clean it, analyse it, t
 All commands are run from the `price-api` folder, using module syntax so that `from housing import config` resolves:
 
 ```bash
+cd price-api
 pip install -r requirements.txt
 python -m housing.data.synthetic.data_generator
 ```
+
+## End-to-end flow
+
+```text
+messy_data_generator → GET /new-listings
+        ↓
+fetch_new_data → validate_and_clean → append to housing.csv
+        ↓
+train (impute → scale/one-hot → LinearRegression) → save version
+        ↓
+registry quality gate (R² drop ≤ 0.02) → promote production_model.joblib
+        ↓
+API detects the new file, reloads, and serves /predict
+        ↓
+Angular UI sends house features → receives predicted price
+```
+
+## Retraining flow
+
+The scheduler (`jobs/retrain_scheduler.py`) repeats this cycle every 10 minutes, and once immediately on start:
+
+```text
+Scheduler tick
+        ↓
+fetch_new_data → GET /new-listings (messy records)
+        ↓            ✗ API down / timeout / HTTP error → log, keep current model, wait for next tick
+validate_and_clean → append clean rows to housing.csv
+        ↓            ✗ no new rows → skip retraining
+train.main() → fit on the full, grown dataset → save as a new version
+        ↓
+model_registry.promote_if_better → compare R² with production
+        ├── R² drop > 0.02 → REJECTED, production model unchanged
+        └── otherwise → PROMOTED: production_model.joblib replaced atomically
+                              ↓
+                  API sees the changed file on its next /predict and hot-reloads it
+```
+
+Any exception inside a cycle is logged and swallowed, so one bad run never stops the scheduler. Details are in [section 4](#4-api-and-retraining-scheduler).
 
 ## Project layout
 
 ```text
 first-prj/
+├── README.md
 ├── price-api/
 │   └── housing/
 │       ├── config.py                 # paths, feature lists, split/seed, quality-gate threshold
@@ -94,12 +134,17 @@ These are exploration scripts. They don't change the production model; `train.py
 | `eda/feature_analysis.py` | Basic overview (shape, missing values, summary stats), correlation of each numeric feature with price, multicollinearity check via VIF, and RandomForest feature importance across numeric and categorical features. | `python -m housing.ml.analysis.eda.feature_analysis` |
 | `check_linearity.py` | Checks whether a linear model is appropriate. Saves scatter plots of each feature against price (`feature_vs_target.png`) and residual diagnostics (`residual_diagnostics.png`: residuals vs predicted, residual histogram) to `price-storage/outputs/img/`. | `python -m housing.ml.analysis.check_linearity` |
 | `evaluate/compare_models.py` | Trains LinearRegression, Lasso, Ridge and RandomForest on the same split and preprocessing. Prints RMSE, MAE and R² sorted by R², plus the Lasso coefficients to show which features it shrinks. | `python -m housing.ml.analysis.evaluate.compare_models` |
+Outcome: the data is close to linear, so plain linear models do as well as or better than the tree model, and `train.py` uses `LinearRegression`.
+
+### For learning / experimentation only
+
+The scripts below are **not part of the price API**. Nothing in `train.py`, the registry, the API or the scheduler imports or uses them. They exist to practise hyperparameter tuning and see how the techniques compare.
+
+| Script | Purpose | Run |
+|---|---|---|
 | `evaluate/grid_search_tune_hyperparam.py` | `GridSearchCV` (5-fold) over a log-scale alpha grid for Ridge and Lasso. Reports best params, CV RMSE, held-out test RMSE and R². | `python -m housing.ml.analysis.evaluate.grid_search_tune_hyperparam` |
 | `evaluate/random_search_tune_hyerparam.py` | `RandomizedSearchCV` (30 iterations, 5-fold) over RandomForest `n_estimators`, `max_depth`, `min_samples_split` and `min_samples_leaf`. | `python -m housing.ml.analysis.evaluate.random_search_tune_hyerparam` |
-
-`scratch_gradient_descent.py` is a standalone learning exercise.
-
-Outcome: the data is close to linear, so plain linear models do as well as or better than the tree model, and `train.py` uses `LinearRegression`.
+| `scratch_gradient_descent.py` | Standalone gradient descent exercise. | `python -m housing.ml.analysis.scratch_gradient_descent` |
 
 ---
 
@@ -191,18 +236,10 @@ uvicorn housing.api.main:app --port 8000            # terminal 1: API
 python -m housing.jobs.retrain_scheduler            # terminal 2: scheduler
 ```
 
-### End-to-end flow
+### Docker
 
-```text
-messy_data_generator → GET /new-listings
-        ↓
-fetch_new_data → validate_and_clean → append to housing.csv
-        ↓
-train (impute → scale/one-hot → LinearRegression) → save version
-        ↓
-registry quality gate (R² drop ≤ 0.02) → promote production_model.joblib
-        ↓
-API detects the new file, reloads, and serves /predict
-        ↓
-Angular UI sends house features → receives predicted price
+```bash
+docker compose up --build
 ```
+
+Starts bootstrap (runs once), then the API on port 8000, then the scheduler. All three share `../price-storage`, mounted at `/price-storage`.
