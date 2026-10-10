@@ -48,6 +48,40 @@ model_registry.promote_if_better → compare R² with production
 
 Any exception inside a cycle is logged and swallowed, so one bad run never stops the scheduler. Details are in [section 4](#4-api-and-retraining-scheduler).
 
+## Key insights
+
+**Real-world data handling**
+- Clean synthetic data generator
+- Messy data simulator (7 types of real-world issues)
+- 9-step validation pipeline with detailed logging
+
+**Production ML pipeline**
+- `ColumnTransformer` with parallel preprocessing
+- Proper imputation strategies (median for numeric, most_frequent for categorical)
+- `OneHotEncoder` with `handle_unknown="ignore"` for robustness
+
+**Model management**
+- Version tracking with timestamps
+- Quality gate (R² drop ≤ 0.02)
+- Atomic file operations (prevent corruption)
+- Rollback capability
+
+**Zero-downtime API**
+- Hot-reload without restart
+- File mtime checking
+- Thread-safe model swapping
+- Swagger/ReDoc docs
+
+**Automated retraining**
+- APScheduler fetch → retrain → promote loop
+- Bootstrap for cold start
+- Error recovery (doesn't crash on bad data)
+- Graceful timeout handling
+
+**Analysis suite**
+- EDA, linearity checks, model comparison
+- Hyperparameter tuning (GridSearch, RandomSearch)
+
 ## Project layout
 
 ```text
