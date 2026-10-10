@@ -1,0 +1,34 @@
+2026-10-10 14:27:57,131 | INFO | housing.data.data_loader | Loaded 2000 rows, 7 cols from D:\Malay\ws\ml\repo\first-prj\price-storage\data\housing.csv
+2026-10-10 14:27:57,169 | INFO | housing.data.validate | Validation: 2000 raw records in -> 2000 clean records out (100% kept)
+2026-10-10 14:27:57,174 | INFO | __main__ | Train size: 1600 | Test size: 400
+2026-10-10 14:27:57,271 | INFO | __main__ | Test metrics: {'rmse': 16116.817561657235, 'mae': 12826.485139411525, 'r2_score': 0.8185590891322589}
+2026-10-10 14:27:57,281 | INFO | housing.ml.model_registry | Saved new model version: 20261010_142757_271867
+2026-10-10 14:27:57,282 | INFO | housing.ml.model_registry | No existing production model -- promoting 20261010_142757_271867 as the first one.
+2026-10-10 14:27:57,287 | INFO | housing.ml.model_registry | Promoted version 20261010_142757_271867 to production.
+2026-10-10 14:27:57,287 | INFO | __main__ | Version 20261010_142757_271867 is now the production model.
+2026-10-10 14:27:57,290 | INFO | __main__ | Top feature coefficients:
+numeric__area_sqft                  23500.200590
+categorical__location_tier_Tier1    21075.845940
+categorical__location_tier_Tier3   -17929.442062
+numeric__bedrooms                   11136.520872
+numeric__distance_to_city_km        -9673.369363
+numeric__age_years                  -8419.340531
+numeric__bathrooms                   3995.320381
+categorical__location_tier_Tier2    -3146.403877
+2026-10-10 14:36:47,504 | INFO | housing.data.data_loader | Loaded 2000 rows, 7 cols from D:\Malay\ws\ml\repo\first-prj\price-storage\data\housing.csv
+2026-10-10 14:36:47,546 | INFO | housing.data.validate | Validation: 2000 raw records in -> 2000 clean records out (100% kept)
+2026-10-10 14:36:47,553 | INFO | __main__ | Train size: 1600 | Test size: 400
+2026-10-10 14:36:47,631 | INFO | __main__ | Test metrics: {'rmse': 16130.037011984483, 'mae': 12836.108946425606, 'r2_score': 0.8205932771080892}
+2026-10-10 14:36:47,636 | INFO | housing.ml.model_registry | Saved new model version: 20261010_143647_631543
+2026-10-10 14:36:47,636 | INFO | housing.ml.model_registry | No existing production model -- promoting 20261010_143647_631543 as the first one.
+2026-10-10 14:36:47,640 | INFO | housing.ml.model_registry | Promoted version 20261010_143647_631543 to production.
+2026-10-10 14:36:47,641 | INFO | __main__ | Version 20261010_143647_631543 is now the production model.
+2026-10-10 14:36:47,645 | INFO | __main__ | Top feature coefficients:
+numeric__area_sqft                  23762.371061
+categorical__location_tier_Tier1    21228.384183
+categorical__location_tier_Tier3   -18126.835378
+numeric__bedrooms                   11230.985702
+numeric__distance_to_city_km        -9864.921887
+numeric__age_years                  -8513.444886
+numeric__bathrooms                   4052.169355
+categorical__location_tier_Tier2    -3101.548805

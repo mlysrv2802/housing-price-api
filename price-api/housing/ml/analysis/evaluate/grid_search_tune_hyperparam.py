@@ -75,7 +75,7 @@ def main() -> None:
     )
 
     tune_with_cross_validation(
-        "Lasso", Lasso(random_state=config.RANDOM_STATE, max_iter=10000),
+        "Lasso", Lasso(random_state=config.RANDOM_SEED, max_iter=10000),
         {"regressor__alpha": alpha_grid},
         X_train, y_train, X_test, y_test,
     )

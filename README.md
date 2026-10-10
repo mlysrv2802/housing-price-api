@@ -28,7 +28,7 @@ Angular UI sends house features → receives predicted price
 
 ## Retraining flow
 
-The scheduler (`jobs/retrain_scheduler.py`) repeats this cycle every 10 minutes, and once immediately on start:
+The scheduler (`jobs/retrain_scheduler.py`) repeats this cycle every 5 minutes, and once immediately on start:
 
 ```text
 Scheduler tick
@@ -143,7 +143,7 @@ The scripts below are **not part of the price API**. Nothing in `train.py`, the 
 | Script | Purpose | Run |
 |---|---|---|
 | `evaluate/grid_search_tune_hyperparam.py` | `GridSearchCV` (5-fold) over a log-scale alpha grid for Ridge and Lasso. Reports best params, CV RMSE, held-out test RMSE and R². | `python -m housing.ml.analysis.evaluate.grid_search_tune_hyperparam` |
-| `evaluate/random_search_tune_hyerparam.py` | `RandomizedSearchCV` (30 iterations, 5-fold) over RandomForest `n_estimators`, `max_depth`, `min_samples_split` and `min_samples_leaf`. | `python -m housing.ml.analysis.evaluate.random_search_tune_hyerparam` |
+| `evaluate/random_search_tune_hyperparam.py` | `RandomizedSearchCV` (30 iterations, 5-fold) over RandomForest `n_estimators`, `max_depth`, `min_samples_split` and `min_samples_leaf`. | `python -m housing.ml.analysis.evaluate.random_search_tune_hyperparam` |
 | `scratch_gradient_descent.py` | Standalone gradient descent exercise. | `python -m housing.ml.analysis.scratch_gradient_descent` |
 
 ---
@@ -186,8 +186,8 @@ Logic:
 - `list_versions()` and `rollback_to(version_id)` let you review versions and go back to an older one.
 
 ```bash
-python -m housing.ml.model_registry list
-python -m housing.ml.model_registry rollback <version_id>
+python -m housing.ml.model_registry list                    # production metrics + every version (id, R², RMSE), newest first
+python -m housing.ml.model_registry rollback <version_id>   # make an older version the production model
 ```
 
 ---
@@ -200,6 +200,13 @@ python -m housing.ml.model_registry rollback <version_id>
 uvicorn housing.api.main:app --port 8000
 ```
 
+| URL | What it is |
+|---|---|
+| http://127.0.0.1:8000/docs | Swagger UI: browse and try every endpoint |
+| http://127.0.0.1:8000/redoc | ReDoc documentation |
+| http://127.0.0.1:8000/openapi.json | OpenAPI schema |
+| http://127.0.0.1:8000/health | Health check |
+
 | Endpoint | Description |
 |---|---|
 | `GET /health` | Liveness check; reports whether the model is loaded. |
@@ -208,7 +215,7 @@ uvicorn housing.api.main:app --port 8000
 
 Notes:
 - The production model is loaded on startup (the app refuses to start if none exists; run `train` or the scheduler's bootstrap first).
-- The scheduler is a separate process that replaces the production model file. `/predict` checks the file's modification time on each request and hot-reloads the model when it changes. If a reload fails, the previous model keeps serving.
+- The scheduler is a separate process that replaces the production model file. On every `/predict` request, `_reload_if_stale()` compares the production model file's modification time with the one loaded in memory. If the file changed (a new model was promoted), the API reloads it on that request, under a lock so concurrent requests don't reload twice. No API restart is needed, and until the next request arrives the old model stays in memory. If a reload fails, the previous model keeps serving.
 - CORS allows `http://localhost:4200` (the Angular UI).
 
 ### Retraining scheduler: `jobs/retrain_scheduler.py` (APScheduler)
@@ -218,7 +225,7 @@ python -m housing.jobs.retrain_scheduler
 ```
 
 1. **Bootstrap** (`bootstrap_if_needed`): if there is no production model, generate the clean dataset if needed and run `train.main()`. This doesn't need the API.
-2. **Every 10 minutes** (and once immediately on start), `fetch_and_retrain_job` runs:
+2. **Every 5 minutes** (and once immediately on start), `fetch_and_retrain_job` runs:
    1. **Fetch**: `fetch_new_data` calls `GET /new-listings` (base URL from `API_BASE_URL`, default `http://127.0.0.1:8000`, 10 s timeout), cleans the records with `validate_and_clean`, and appends them to `housing.csv`. On a connection error, timeout or HTTP error it logs the problem and exits non-zero, and the scheduler waits for the next tick.
    2. **Skip** retraining if no new rows were added.
    3. **Retrain**: `train.main()` fits on the grown dataset and saves a new version.
@@ -234,6 +241,7 @@ python -m housing.data.synthetic.data_generator     # initial data
 python -m housing.ml.train                          # first production model
 uvicorn housing.api.main:app --port 8000            # terminal 1: API
 python -m housing.jobs.retrain_scheduler            # terminal 2: scheduler
+python -m housing.ml.model_registry list            # terminal 3: see versions and which R² is in production
 ```
 
 ### Docker

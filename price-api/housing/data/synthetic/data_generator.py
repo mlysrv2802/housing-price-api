@@ -32,7 +32,7 @@ def generate_housing_data(n_rows: int = 2000) -> pd.DataFrame:
     price = (
         50 * area_sqft + 8000 * bedrooms + 5000*bathrooms
         - 800 * age_years - 1200 * distance_to_city_km
-        + tier_premium + 2000 + noise
+        + tier_premium + 20000 + noise
     ).clip(min=20000)
 
     df = pd.DataFrame({

@@ -77,7 +77,7 @@ def _run_fetch_and_retrain() -> None:
 if __name__ == "__main__":
     bootstrap_if_needed()
     scheduler = BlockingScheduler()
-    INTERVAL_MINUTES = 10
+    INTERVAL_MINUTES = 60
     scheduler.add_job(
         fetch_and_retrain_job,
         trigger=IntervalTrigger(minutes=INTERVAL_MINUTES),
