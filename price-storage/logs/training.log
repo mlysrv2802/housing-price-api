@@ -32,3 +32,20 @@ numeric__distance_to_city_km        -9864.921887
 numeric__age_years                  -8513.444886
 numeric__bathrooms                   4052.169355
 categorical__location_tier_Tier2    -3101.548805
+2026-10-10 14:57:29,737 | INFO | housing.data.data_loader | Loaded 2000 rows, 7 cols from D:\Malay\ws\ml\repo\first-prj\price-storage\data\housing.csv
+2026-10-10 14:57:29,774 | INFO | housing.data.validate | Validation: 2000 raw records in -> 2000 clean records out (100% kept)
+2026-10-10 14:57:29,778 | INFO | __main__ | Train size: 1600 | Test size: 400
+2026-10-10 14:57:29,846 | INFO | __main__ | Test metrics: {'rmse': 16130.037011984483, 'mae': 12836.108946425606, 'r2_score': 0.8205932771080892}
+2026-10-10 14:57:29,849 | INFO | housing.ml.model_registry | Saved new model version: 20261010_145729_846253
+2026-10-10 14:57:29,850 | INFO | housing.ml.model_registry | Promoting version 20261010_145729_846253: R^2 0.8232 -> 0.8206 (change: -0.0026)
+2026-10-10 14:57:29,853 | INFO | housing.ml.model_registry | Promoted version 20261010_145729_846253 to production.
+2026-10-10 14:57:29,853 | INFO | __main__ | Version 20261010_145729_846253 is now the production model.
+2026-10-10 14:57:29,855 | INFO | __main__ | Top feature coefficients:
+numeric__area_sqft                  23762.371061
+categorical__location_tier_Tier1    21228.384183
+categorical__location_tier_Tier3   -18126.835378
+numeric__bedrooms                   11230.985702
+numeric__distance_to_city_km        -9864.921887
+numeric__age_years                  -8513.444886
+numeric__bathrooms                   4052.169355
+categorical__location_tier_Tier2    -3101.548805
