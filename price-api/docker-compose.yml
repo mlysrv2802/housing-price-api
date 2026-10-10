@@ -1,0 +1,42 @@
+x-storage-volume: &storage
+  # Inside the container config.py resolves STORAGE_DIR to /price-storage
+  # (BASE_DIR=/app, STORAGE_DIR=BASE_DIR.parent/"price-storage"), so mounting
+  # the whole folder covers data/, model/, logs/ and outputs/img/.
+  - ../price-storage:/price-storage
+
+services:
+  bootstrap-price-data:
+    build: .
+    container_name: bootstrap-price-data-cont
+    command: python -c "from housing.jobs.retrain_scheduler import bootstrap_if_needed; bootstrap_if_needed()"
+    volumes: *storage
+    # no restart policy -- this container is meant to run once and exit
+
+  price-prediction-api:
+    build: .
+    container_name: price-prediction-api-cont
+    depends_on:
+      bootstrap-price-data:
+        condition: service_completed_successfully
+    ports:
+      - "8000:8000"
+    volumes: *storage
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  price-data-training-scheduler:
+    build: .
+    container_name: price-data-training-scheduler-cont
+    depends_on:
+      price-prediction-api:
+        condition: service_healthy
+    command: python -m housing.jobs.retrain_scheduler
+    environment:
+      - API_BASE_URL=http://price-prediction-api:8000
+    volumes: *storage
+    restart: unless-stopped

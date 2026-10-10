@@ -1,0 +1,15 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.vscode/
+.git/
+logs/
+*.log
+tests/
+pytest.ini
+*.png
+Dockerfile
+docker-compose.yml
+.dockerignore
